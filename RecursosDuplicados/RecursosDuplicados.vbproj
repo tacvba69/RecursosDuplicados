@@ -42,4 +42,14 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\README.md" />
+    <None Include="..\README_ES.md" />
+    <None Include="..\README_EN.md" />
+    <None Include="..\README_FR.md" />
+    <None Include="..\README_DE.md" />
+    <None Include="..\README_IT.md" />
+    <None Include="..\README_PT.md" />
+  </ItemGroup>
+
 </Project>

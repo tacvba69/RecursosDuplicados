@@ -6,6 +6,7 @@ Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 Imports Microsoft.VisualBasic.FileIO
+Imports System.Collections
 
 Public Module Shell32Helper
     <DllImport("shell32.dll", CharSet:=CharSet.Auto, BestFitMapping:=False, ThrowOnUnmappableChar:=True)>
@@ -108,9 +109,34 @@ Public Class Form1
         lvDuplicados.Columns.Add("Tipo", 100)
         lvDuplicados.FullRowSelect = True
         lvDuplicados.GridLines = True
+        lvDuplicados.Sorting = SortOrder.None
+        lvDuplicados.ListViewItemSorter = Nothing
 
         ToolStripProgressBar1.Visible = False
         lblProgreso.Text = ""
+
+        ' Configurar estado inicial de los botones de vista
+        ActualizarEstadoBotonesVista()
+        
+        ' Configurar iconos de los botones de selección
+        btnSeleccionarTodos.Image = CrearIconoSeleccionarTodos()
+        btnDeseleccionarTodos.Image = CrearIconoDeseleccionarTodos()
+        btnInvertirSeleccion.Image = CrearIconoInvertirSeleccion()
+        
+        ' Aplicar idioma al formulario
+        Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
+        LanguageManager.ApplyLanguage(Me, selectedLanguage)
+    End Sub
+
+    Private Sub ActualizarEstadoBotonesVista()
+        ' Actualizar el estado visual de los botones según la vista actual
+        If lvDuplicados.View = View.LargeIcon Then
+            btnVistaIconos.Checked = True
+            btnVistaDetalles.Checked = False
+        Else
+            btnVistaIconos.Checked = False
+            btnVistaDetalles.Checked = True
+        End If
     End Sub
 
     Private Async Sub BuscarDuplicados()
@@ -125,13 +151,14 @@ Public Class Form1
 
                 ToolStripProgressBar1.Visible = True
                 ToolStripProgressBar1.Value = 0
-                lblProgreso.Text = "Iniciando análisis..."
+                Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
+                lblProgreso.Text = LanguageResources.GetResource(selectedLanguage, "MsgIniciandoAnalisis")
 
                 Dim duplicados As List(Of List(Of String)) = Await Task.Run(Function() ObtenerDuplicadosConProgreso(rutaCarpeta))
 
                 If duplicados.Count = 0 Then
-                    lblProgreso.Text = "No se encontraron duplicados."
-                    MessageBox.Show("No se encontraron duplicados.")
+                    lblProgreso.Text = LanguageResources.GetResource(selectedLanguage, "MsgNoDuplicados")
+                    MessageBox.Show(LanguageResources.GetResource(selectedLanguage, "MsgNoDuplicados"))
                 Else
                     Dim totalArchivos As Integer = duplicados.Sum(Function(g) g.Count)
                     Dim archivoActual As Integer = 0
@@ -140,9 +167,10 @@ Public Class Form1
                     ' Limpiar grupos existentes
                     lvDuplicados.Groups.Clear()
 
+                    Dim selectedLanguageGrupos As String = LanguageManager.GetSavedLanguage()
                     For Each grupo As List(Of String) In duplicados
                         ' Crear un grupo para este conjunto de duplicados
-                        Dim nombreGrupo As String = $"Grupo {numeroGrupo} - {grupo.Count} archivo(s) duplicado(s)"
+                        Dim nombreGrupo As String = String.Format(LanguageResources.GetResource(selectedLanguageGrupos, "MsgGrupo"), numeroGrupo, grupo.Count)
                         Dim listViewGroup As New ListViewGroup(nombreGrupo) With {
                             .Header = nombreGrupo
                         }
@@ -183,7 +211,7 @@ Public Class Form1
 
                                 lvDuplicados.Items.Add(item)
                                 archivoActual += 1
-                                lblProgreso.Text = $"Cargando miniaturas: {archivoActual} de {totalArchivos}..."
+                                lblProgreso.Text = String.Format(LanguageResources.GetResource(selectedLanguageGrupos, "MsgCargandoMiniaturas"), archivoActual, totalArchivos)
                                 Application.DoEvents()
                             Catch ex As Exception
                                 ' Ignorar error
@@ -191,7 +219,8 @@ Public Class Form1
                         Next
                         numeroGrupo += 1
                     Next
-                    lblProgreso.Text = $"Se encontraron {duplicados.Count} grupos de archivos duplicados."
+                    Dim selectedLanguage2 As String = LanguageManager.GetSavedLanguage()
+                    lblProgreso.Text = String.Format(LanguageResources.GetResource(selectedLanguage2, "MsgSeEncontraronGrupos"), duplicados.Count)
                 End If
 
                 lvDuplicados.View = View.LargeIcon
@@ -230,7 +259,8 @@ Public Class Form1
         Catch ex As UnauthorizedAccessException
             ' Sin permisos para acceder al directorio
             Invoke(Sub()
-                       MessageBox.Show($"No se tienen permisos para acceder a: {rutaNormalizada}", "Error de permisos", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                       Dim selectedLanguage5 As String = LanguageManager.GetSavedLanguage()
+                       MessageBox.Show(String.Format(LanguageResources.GetResource(selectedLanguage5, "MsgErrorPermisos"), rutaNormalizada), LanguageResources.GetResource(selectedLanguage5, "MsgTituloErrorPermisos"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
                    End Sub)
             Return New List(Of List(Of String))()
         Catch ex As Exception
@@ -241,9 +271,10 @@ Public Class Form1
         ' Advertir si hay muchos archivos, pero permitir procesarlos todos
         If archivos IsNot Nothing AndAlso archivos.Length > 50000 Then
             Invoke(Sub()
+                       Dim selectedLanguage6 As String = LanguageManager.GetSavedLanguage()
                        Dim resultado As DialogResult = MessageBox.Show(
-                           $"Se encontraron {archivos.Length:N0} archivos. Esto puede tardar mucho tiempo.{vbCrLf}¿Desea continuar con el análisis completo?",
-                           "Muchos archivos", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                           String.Format(LanguageResources.GetResource(selectedLanguage6, "MsgMuchosArchivos"), archivos.Length, vbCrLf),
+                           LanguageResources.GetResource(selectedLanguage6, "MsgTituloMuchosArchivos"), MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                        If resultado = DialogResult.No Then
                            Return
                        End If
@@ -316,7 +347,8 @@ Public Class Form1
                 Dim gruposEncontrados = hashDic.Values.Where(Function(l) l.Count > 1).Count()
                 Invoke(Sub()
                            ToolStripProgressBar1.Value = iCopy + 1
-                           lblProgreso.Text = $"Revisando archivo {iCopy + 1} de {archivos.Length}... Grupos encontrados: {gruposEncontrados}"
+                           Dim selectedLanguage4 As String = LanguageManager.GetSavedLanguage()
+                           lblProgreso.Text = String.Format(LanguageResources.GetResource(selectedLanguage4, "MsgRevisandoArchivo"), iCopy + 1, archivos.Length, gruposEncontrados)
                        End Sub)
             Next
         End Using
@@ -817,6 +849,71 @@ Public Class Form1
         End Using
         Return img
     End Function
+    
+    Private Function CrearIconoSeleccionarTodos() As Image
+        Dim img As New Bitmap(16, 16)
+        Using g As Graphics = Graphics.FromImage(img)
+            g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+            g.Clear(Color.Transparent)
+            ' Dibujar múltiples checkboxes marcados
+            Using pen As New Pen(Color.Black, 1.5F)
+                Using brush As New SolidBrush(Color.Green)
+                    ' Checkbox 1 (arriba izquierda)
+                    g.DrawRectangle(pen, 1, 1, 5, 5)
+                    g.FillRectangle(brush, 2, 2, 3, 3)
+                    ' Checkbox 2 (arriba derecha)
+                    g.DrawRectangle(pen, 10, 1, 5, 5)
+                    g.FillRectangle(brush, 11, 2, 3, 3)
+                    ' Checkbox 3 (abajo izquierda)
+                    g.DrawRectangle(pen, 1, 10, 5, 5)
+                    g.FillRectangle(brush, 2, 11, 3, 3)
+                    ' Checkbox 4 (abajo derecha)
+                    g.DrawRectangle(pen, 10, 10, 5, 5)
+                    g.FillRectangle(brush, 11, 11, 3, 3)
+                End Using
+            End Using
+        End Using
+        Return img
+    End Function
+    
+    Private Function CrearIconoDeseleccionarTodos() As Image
+        Dim img As New Bitmap(16, 16)
+        Using g As Graphics = Graphics.FromImage(img)
+            g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+            g.Clear(Color.Transparent)
+            ' Dibujar múltiples checkboxes desmarcados
+            Using pen As New Pen(Color.Gray, 1.5F)
+                ' Checkbox 1 (arriba izquierda)
+                g.DrawRectangle(pen, 1, 1, 5, 5)
+                ' Checkbox 2 (arriba derecha)
+                g.DrawRectangle(pen, 10, 1, 5, 5)
+                ' Checkbox 3 (abajo izquierda)
+                g.DrawRectangle(pen, 1, 10, 5, 5)
+                ' Checkbox 4 (abajo derecha)
+                g.DrawRectangle(pen, 10, 10, 5, 5)
+            End Using
+        End Using
+        Return img
+    End Function
+    
+    Private Function CrearIconoInvertirSeleccion() As Image
+        Dim img As New Bitmap(16, 16)
+        Using g As Graphics = Graphics.FromImage(img)
+            g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+            g.Clear(Color.Transparent)
+            ' Dibujar flechas bidireccionales (↔)
+            Using pen As New Pen(Color.Blue, 2F)
+                pen.EndCap = Drawing2D.LineCap.ArrowAnchor
+                ' Flecha izquierda
+                g.DrawLine(pen, 12, 8, 4, 8)
+                ' Flecha derecha
+                g.DrawLine(pen, 4, 8, 12, 8)
+                ' Línea vertical central
+                g.DrawLine(pen, 8, 3, 8, 13)
+            End Using
+        End Using
+        Return img
+    End Function
 
     ' Botón buscar
     Private Sub ToolStripButton1_Click(sender As Object, e As EventArgs) Handles ToolStripButton1.Click
@@ -871,22 +968,23 @@ Public Class Form1
         End If
     End Sub
 
-    Private Sub ToolStripButton2_Click(sender As Object, e As EventArgs) Handles ToolStripButton2.Click
-        ' Alternar entre LargeIcon y Details
-        ' Los grupos solo se muestran en Details
-        If lvDuplicados.View = View.LargeIcon Then
-            lvDuplicados.View = View.Details
-            ToolStripButton2.Text = "Vista Iconos"
-        Else
-            lvDuplicados.View = View.LargeIcon
-            ToolStripButton2.Text = "Vista Detalles"
-        End If
+    Private Sub BtnVistaIconos_Click(sender As Object, e As EventArgs) Handles btnVistaIconos.Click
+        ' Cambiar a vista de iconos grandes
+        lvDuplicados.View = View.LargeIcon
+        ActualizarEstadoBotonesVista()
+    End Sub
+
+    Private Sub BtnVistaDetalles_Click(sender As Object, e As EventArgs) Handles btnVistaDetalles.Click
+        ' Cambiar a vista de detalles
+        lvDuplicados.View = View.Details
+        ActualizarEstadoBotonesVista()
     End Sub
 
     Private Sub BtnEliminarSeleccionados_Click(sender As Object, e As EventArgs) Handles btnEliminarSeleccionados.Click
         ' Validar que el ListView no esté vacío
+        Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
         If lvDuplicados.Items.Count = 0 Then
-            MessageBox.Show("No hay archivos en la lista.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show(LanguageResources.GetResource(selectedLanguage, "MsgNoArchivosLista"), LanguageResources.GetResource(selectedLanguage, "MsgTituloInformacion"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -899,23 +997,23 @@ Public Class Form1
         Next
 
         If archivosMarcados.Count = 0 Then
-            MessageBox.Show("No hay archivos seleccionados para eliminar.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show(LanguageResources.GetResource(selectedLanguage, "MsgNoArchivosSeleccionados"), LanguageResources.GetResource(selectedLanguage, "MsgTituloInformacion"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
         ' Advertir si hay muchos archivos a eliminar, pero permitir eliminarlos todos
         If archivosMarcados.Count > 500 Then
             Dim resultadoAdvertencia As DialogResult = MessageBox.Show(
-                $"Está intentando eliminar {archivosMarcados.Count:N0} archivos.{vbCrLf}¿Está seguro de continuar?",
-                "Confirmación requerida", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                String.Format(LanguageResources.GetResource(selectedLanguage, "MsgConfirmacionRequerida"), archivosMarcados.Count, vbCrLf),
+                LanguageResources.GetResource(selectedLanguage, "MsgTituloConfirmacionRequerida"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
             If resultadoAdvertencia <> DialogResult.Yes Then
                 Return
             End If
         End If
 
         ' Confirmar eliminación
-        Dim mensaje As String = $"¿Está seguro de que desea enviar {archivosMarcados.Count} archivo(s) a la papelera de reciclaje?"
-        Dim resultado As DialogResult = MessageBox.Show(mensaje, "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+        Dim mensaje As String = String.Format(LanguageResources.GetResource(selectedLanguage, "MsgConfirmarEliminacion"), archivosMarcados.Count)
+        Dim resultado As DialogResult = MessageBox.Show(mensaje, LanguageResources.GetResource(selectedLanguage, "MsgTituloConfirmarEliminacion"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
 
         If resultado <> DialogResult.Yes Then
             Return
@@ -926,7 +1024,7 @@ Public Class Form1
         Dim eliminadosFallidos As Integer = 0
         Dim errores As New List(Of String)
 
-        lblProgreso.Text = "Eliminando archivos..."
+        lblProgreso.Text = LanguageResources.GetResource(selectedLanguage, "MsgEliminandoArchivos")
         Application.DoEvents()
 
         For Each item As ListViewItem In archivosMarcados
@@ -994,7 +1092,7 @@ Public Class Form1
         Next
 
         ' Mostrar resultado
-        Dim mensajeResultado As String = $"Eliminación completada.{vbCrLf}Exitosos: {eliminadosExitosos}{vbCrLf}Fallidos: {eliminadosFallidos}"
+        Dim mensajeResultado As String = String.Format(LanguageResources.GetResource(selectedLanguage, "MsgEliminacionCompletada"), vbCrLf, eliminadosExitosos, eliminadosFallidos)
         If errores.Count > 0 Then
             mensajeResultado += vbCrLf & vbCrLf & "Errores:" & vbCrLf & String.Join(vbCrLf, errores.Take(10))
             If errores.Count > 10 Then
@@ -1002,7 +1100,7 @@ Public Class Form1
             End If
         End If
 
-        MessageBox.Show(mensajeResultado, "Resultado de eliminación", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(mensajeResultado, LanguageResources.GetResource(selectedLanguage, "MsgTituloResultadoEliminacion"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         lblProgreso.Text = $"Eliminados: {eliminadosExitosos} | Fallidos: {eliminadosFallidos}"
     End Sub
 
@@ -1060,7 +1158,8 @@ Public Class Form1
             imageCache.Clear()
             imageIndexCounter = 0
 
-            lblProgreso.Text = "Regenerando miniaturas..."
+            Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
+            lblProgreso.Text = LanguageResources.GetResource(selectedLanguage, "MsgRegenerandoMiniaturas").Replace("{0}", "0").Replace("{1}", "0")
             Application.DoEvents()
 
             ' Regenerar miniaturas para cada item
@@ -1078,7 +1177,8 @@ Public Class Form1
                     End If
                 End If
                 If i Mod 10 = 0 Then
-                    lblProgreso.Text = $"Regenerando miniaturas: {i + 1} de {totalItems}..."
+                    Dim selectedLanguage2 As String = LanguageManager.GetSavedLanguage()
+                    lblProgreso.Text = String.Format(LanguageResources.GetResource(selectedLanguage2, "MsgRegenerandoMiniaturas"), i + 1, totalItems)
                     Application.DoEvents()
                 End If
             Next
@@ -1099,7 +1199,8 @@ Public Class Form1
             Next
             lvDuplicados.EndUpdate()
 
-            lblProgreso.Text = "Miniaturas regeneradas."
+            Dim selectedLanguage3 As String = LanguageManager.GetSavedLanguage()
+            lblProgreso.Text = LanguageResources.GetResource(selectedLanguage3, "MsgMiniaturasRegeneradas")
         Finally
             estaRegenerando = False
         End Try
@@ -1122,4 +1223,146 @@ Public Class Form1
             End If
         End If
     End Sub
+    
+    Private Sub BtnIdioma_Click(sender As Object, e As EventArgs) Handles btnIdioma.Click
+        ' Mostrar formulario de selección de idioma
+        Using langForm As New Form2()
+            If langForm.ShowDialog() = DialogResult.OK Then
+                ' Recargar el idioma y aplicar al formulario inmediatamente
+                Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
+                LanguageManager.ApplyLanguage(Me, selectedLanguage)
+                MessageBox.Show(LanguageResources.GetResource(selectedLanguage, "MsgIdiomaCambiado"), LanguageResources.GetResource(selectedLanguage, "MsgTituloIdiomaCambiado"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        End Using
+    End Sub
+    
+    Private Sub BtnSeleccionarTodos_Click(sender As Object, e As EventArgs) Handles btnSeleccionarTodos.Click
+        lvDuplicados.BeginUpdate()
+        For Each item As ListViewItem In lvDuplicados.Items
+            item.Checked = True
+        Next
+        lvDuplicados.EndUpdate()
+        ActualizarEstadisticas()
+    End Sub
+    
+    Private Sub BtnDeseleccionarTodos_Click(sender As Object, e As EventArgs) Handles btnDeseleccionarTodos.Click
+        lvDuplicados.BeginUpdate()
+        For Each item As ListViewItem In lvDuplicados.Items
+            item.Checked = False
+        Next
+        lvDuplicados.EndUpdate()
+        ActualizarEstadisticas()
+    End Sub
+    
+    Private Sub BtnInvertirSeleccion_Click(sender As Object, e As EventArgs) Handles btnInvertirSeleccion.Click
+        lvDuplicados.BeginUpdate()
+        For Each item As ListViewItem In lvDuplicados.Items
+            item.Checked = Not item.Checked
+        Next
+        lvDuplicados.EndUpdate()
+        ActualizarEstadisticas()
+    End Sub
+    
+    Private Sub LvDuplicados_ItemChecked(sender As Object, e As ItemCheckedEventArgs) Handles lvDuplicados.ItemChecked
+        ActualizarEstadisticas()
+    End Sub
+    
+    Private Sub ActualizarEstadisticas()
+        Dim totalArchivos As Integer = 0
+        Dim espacioTotal As Long = 0
+        
+        For Each item As ListViewItem In lvDuplicados.Items
+            If item.Checked AndAlso item.SubItems.Count > 1 Then
+                Dim rutaArchivo As String = item.SubItems(1).Text
+                If Not String.IsNullOrWhiteSpace(rutaArchivo) AndAlso File.Exists(rutaArchivo) Then
+                    Try
+                        Dim fi As New FileInfo(rutaArchivo)
+                        espacioTotal += fi.Length
+                        totalArchivos += 1
+                    Catch
+                    End Try
+                End If
+            End If
+        Next
+        
+        Dim selectedLanguage As String = LanguageManager.GetSavedLanguage()
+        If totalArchivos > 0 Then
+            lblProgreso.Text = $"{totalArchivos} archivo(s) seleccionado(s) - {ConvertirTamanio(espacioTotal)} a liberar"
+        Else
+            lblProgreso.Text = ""
+        End If
+    End Sub
+    
+    Private Sub LvDuplicados_ColumnClick(sender As Object, e As ColumnClickEventArgs) Handles lvDuplicados.ColumnClick
+        ' Ordenar por columna
+        Dim sorter As ListViewItemComparer = TryCast(lvDuplicados.ListViewItemSorter, ListViewItemComparer)
+        
+        If sorter IsNot Nothing AndAlso sorter.Column = e.Column Then
+            ' Invertir el orden si se hace clic en la misma columna
+            sorter.Order = If(sorter.Order = SortOrder.Ascending, SortOrder.Descending, SortOrder.Ascending)
+        Else
+            ' Nueva columna, orden ascendente
+            sorter = New ListViewItemComparer(e.Column, SortOrder.Ascending)
+            lvDuplicados.ListViewItemSorter = sorter
+        End If
+        
+        lvDuplicados.Sort()
+    End Sub
+End Class
+
+' Clase auxiliar para ordenar el ListView
+Public Class ListViewItemComparer
+    Implements IComparer
+    
+    Public Property Column As Integer
+    Public Property Order As SortOrder
+    
+    Public Sub New(column As Integer, order As SortOrder)
+        Me.Column = column
+        Me.Order = order
+    End Sub
+    
+    Public Function Compare(x As Object, y As Object) As Integer Implements IComparer.Compare
+        Dim item1 As ListViewItem = DirectCast(x, ListViewItem)
+        Dim item2 As ListViewItem = DirectCast(y, ListViewItem)
+        
+        If item1.SubItems.Count <= Column OrElse item2.SubItems.Count <= Column Then
+            Return 0
+        End If
+        
+        Dim text1 As String = item1.SubItems(Column).Text
+        Dim text2 As String = item2.SubItems(Column).Text
+        
+        ' Si es la columna de tamaño, comparar numéricamente
+        If Column = 2 Then
+            Try
+                Dim size1 As Long = ObtenerTamanioEnBytes(text1)
+                Dim size2 As Long = ObtenerTamanioEnBytes(text2)
+                Dim resultado As Integer = size1.CompareTo(size2)
+                Return If(Order = SortOrder.Ascending, resultado, -resultado)
+            Catch
+            End Try
+        End If
+        
+        ' Comparación de texto
+        Dim resultadoTexto As Integer = String.Compare(text1, text2, StringComparison.OrdinalIgnoreCase)
+        Return If(Order = SortOrder.Ascending, resultadoTexto, -resultadoTexto)
+    End Function
+    
+    Private Function ObtenerTamanioEnBytes(texto As String) As Long
+        If String.IsNullOrEmpty(texto) Then Return 0
+        texto = texto.Trim().ToUpper()
+        Dim valor As Double = 0
+        If texto.EndsWith(" KB") Then
+            Double.TryParse(texto.Replace(" KB", ""), valor)
+            Return CLng(valor * 1024)
+        ElseIf texto.EndsWith(" MB") Then
+            Double.TryParse(texto.Replace(" MB", ""), valor)
+            Return CLng(valor * 1024 * 1024)
+        ElseIf texto.EndsWith(" GB") Then
+            Double.TryParse(texto.Replace(" GB", ""), valor)
+            Return CLng(valor * 1024 * 1024 * 1024)
+        End If
+        Return 0
+    End Function
 End Class

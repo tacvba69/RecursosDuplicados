@@ -27,9 +27,16 @@ Partial Class Form1
         ToolStrip1 = New ToolStrip()
         ToolStripButton1 = New ToolStripButton()
         ToolStripSeparator1 = New ToolStripSeparator()
-        ToolStripButton2 = New ToolStripButton()
+        btnVistaIconos = New ToolStripButton()
+        btnVistaDetalles = New ToolStripButton()
         ToolStripSeparator2 = New ToolStripSeparator()
         btnEliminarSeleccionados = New ToolStripButton()
+        ToolStripSeparator3 = New ToolStripSeparator()
+        btnSeleccionarTodos = New ToolStripButton()
+        btnDeseleccionarTodos = New ToolStripButton()
+        btnInvertirSeleccion = New ToolStripButton()
+        ToolStripSeparator4 = New ToolStripSeparator()
+        btnIdioma = New ToolStripButton()
         StatusStrip1 = New StatusStrip()
         ToolStripProgressBar1 = New ToolStripProgressBar()
         lblProgreso = New ToolStripStatusLabel()
@@ -40,7 +47,7 @@ Partial Class Form1
         ' 
         ' ToolStrip1
         ' 
-        ToolStrip1.Items.AddRange(New ToolStripItem() {ToolStripButton1, ToolStripSeparator1, ToolStripButton2, ToolStripSeparator2, btnEliminarSeleccionados})
+        ToolStrip1.Items.AddRange(New ToolStripItem() {ToolStripButton1, ToolStripSeparator1, btnVistaIconos, btnVistaDetalles, ToolStripSeparator2, btnEliminarSeleccionados, ToolStripSeparator3, btnSeleccionarTodos, btnDeseleccionarTodos, btnInvertirSeleccion, ToolStripSeparator4, btnIdioma})
         ToolStrip1.Location = New Point(0, 0)
         ToolStrip1.Name = "ToolStrip1"
         ToolStrip1.Size = New System.Drawing.Size(1000, 25)
@@ -61,14 +68,25 @@ Partial Class Form1
         ToolStripSeparator1.Name = "ToolStripSeparator1"
         ToolStripSeparator1.Size = New System.Drawing.Size(6, 25)
         ' 
-        ' ToolStripButton2
+        ' btnVistaIconos
         ' 
-        ToolStripButton2.DisplayStyle = ToolStripItemDisplayStyle.Image
-        ToolStripButton2.Image = CType(resources.GetObject("ToolStripButton2.Image"), Image)
-        ToolStripButton2.ImageTransparentColor = Color.Magenta
-        ToolStripButton2.Name = "ToolStripButton2"
-        ToolStripButton2.Size = New System.Drawing.Size(23, 22)
-        ToolStripButton2.Text = "ToolStripButton2"
+        btnVistaIconos.CheckOnClick = True
+        btnVistaIconos.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnVistaIconos.Image = My.Resources.Resources.application_view_icons
+        btnVistaIconos.ImageTransparentColor = Color.Magenta
+        btnVistaIconos.Name = "btnVistaIconos"
+        btnVistaIconos.Size = New System.Drawing.Size(23, 22)
+        btnVistaIconos.Text = "Vista Iconos"
+        ' 
+        ' btnVistaDetalles
+        ' 
+        btnVistaDetalles.CheckOnClick = True
+        btnVistaDetalles.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnVistaDetalles.Image = My.Resources.Resources.application_view_detail
+        btnVistaDetalles.ImageTransparentColor = Color.Magenta
+        btnVistaDetalles.Name = "btnVistaDetalles"
+        btnVistaDetalles.Size = New System.Drawing.Size(23, 22)
+        btnVistaDetalles.Text = "Vista Detalles"
         ' 
         ' ToolStripSeparator2
         ' 
@@ -83,6 +101,49 @@ Partial Class Form1
         btnEliminarSeleccionados.Name = "btnEliminarSeleccionados"
         btnEliminarSeleccionados.Size = New System.Drawing.Size(23, 22)
         btnEliminarSeleccionados.Text = "Eliminar Archivos Seleccionados"
+        ' 
+        ' ToolStripSeparator3
+        ' 
+        ToolStripSeparator3.Name = "ToolStripSeparator3"
+        ToolStripSeparator3.Size = New System.Drawing.Size(6, 25)
+        ' 
+        ' btnSeleccionarTodos
+        ' 
+        btnSeleccionarTodos.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnSeleccionarTodos.ImageTransparentColor = Color.Magenta
+        btnSeleccionarTodos.Name = "btnSeleccionarTodos"
+        btnSeleccionarTodos.Size = New System.Drawing.Size(23, 22)
+        btnSeleccionarTodos.Text = "Seleccionar Todos"
+        ' 
+        ' btnDeseleccionarTodos
+        ' 
+        btnDeseleccionarTodos.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnDeseleccionarTodos.ImageTransparentColor = Color.Magenta
+        btnDeseleccionarTodos.Name = "btnDeseleccionarTodos"
+        btnDeseleccionarTodos.Size = New System.Drawing.Size(23, 22)
+        btnDeseleccionarTodos.Text = "Deseleccionar Todos"
+        ' 
+        ' btnInvertirSeleccion
+        ' 
+        btnInvertirSeleccion.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnInvertirSeleccion.ImageTransparentColor = Color.Magenta
+        btnInvertirSeleccion.Name = "btnInvertirSeleccion"
+        btnInvertirSeleccion.Size = New System.Drawing.Size(23, 22)
+        btnInvertirSeleccion.Text = "Invertir Selección"
+        ' 
+        ' ToolStripSeparator4
+        ' 
+        ToolStripSeparator4.Name = "ToolStripSeparator4"
+        ToolStripSeparator4.Size = New System.Drawing.Size(6, 25)
+        ' 
+        ' btnIdioma
+        ' 
+        btnIdioma.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnIdioma.Image = My.Resources.Resources.application
+        btnIdioma.ImageTransparentColor = Color.Magenta
+        btnIdioma.Name = "btnIdioma"
+        btnIdioma.Size = New System.Drawing.Size(23, 22)
+        btnIdioma.Text = "Idioma"
         ' 
         ' StatusStrip1
         ' 
@@ -102,7 +163,7 @@ Partial Class Form1
         ' 
         lblProgreso.AutoSize = False
         lblProgreso.Name = "lblProgreso"
-        lblProgreso.Size = New System.Drawing.Size(300, 17)
+        lblProgreso.Spring = True
         lblProgreso.Text = "ToolStripStatusLabel1"
         lblProgreso.TextAlign = ContentAlignment.MiddleLeft
         ' 
@@ -118,7 +179,7 @@ Partial Class Form1
         ' 
         ' Form1
         ' 
-        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New System.Drawing.Size(1000, 510)
         Controls.Add(lvDuplicados)
@@ -144,7 +205,14 @@ Partial Class Form1
     Friend WithEvents ToolStripProgressBar1 As ToolStripProgressBar
     Friend WithEvents lvDuplicados As ListViewConZoom
     Friend WithEvents lblProgreso As ToolStripStatusLabel
-    Friend WithEvents ToolStripButton2 As ToolStripButton
+    Friend WithEvents btnVistaIconos As ToolStripButton
+    Friend WithEvents btnVistaDetalles As ToolStripButton
     Friend WithEvents ToolStripSeparator2 As ToolStripSeparator
+    Friend WithEvents ToolStripSeparator3 As ToolStripSeparator
+    Friend WithEvents btnSeleccionarTodos As ToolStripButton
+    Friend WithEvents btnDeseleccionarTodos As ToolStripButton
+    Friend WithEvents btnInvertirSeleccion As ToolStripButton
+    Friend WithEvents ToolStripSeparator4 As ToolStripSeparator
+    Friend WithEvents btnIdioma As ToolStripButton
 
 End Class
