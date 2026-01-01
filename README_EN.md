@@ -161,5 +161,5 @@ This project is open source and available for personal and commercial use.
 ---
 
 **Version:** 1.0  
-**Last update:** 2024
+**Last update:** 2026
 
